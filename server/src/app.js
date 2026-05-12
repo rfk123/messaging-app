@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const pool = require("./config/db");
 
-
 const app = express(); //create an express instance
 
 //app is essentially our backend server object
