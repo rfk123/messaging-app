@@ -5,9 +5,13 @@ const pool = require("./config/db");
 
 const app = express(); //create an express instance
 
+const authRoutes = require("./routes/authRoutes");
+
+
 //app is essentially our backend server object
 app.use(cors()); // allow other origins to call this backend 
 app.use(express.json()); // allow express to understand json request bodies
+app.use("/api/auth", authRoutes); //mount auth routes to /apip/auth
 
 app.get("/api/health", (req, res) => {
     res.json({
