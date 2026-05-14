@@ -6,12 +6,14 @@ essentially a traffic controller
 */
 
 const express = require("express");
-const { signup, login } = require("../controllers/authControllers");
+const { signup, login, getMe } = require("../controllers/authControllers");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router(); //create a mini-router just for auth routes
 
 router.post("/signup", signup); // when someone sends a post request to /signup, run the signup function
 router.post("/login", login);
+router.get("/me", authMiddleware, getMe);
 
 module.exports = router;
 
