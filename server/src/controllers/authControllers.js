@@ -1,6 +1,7 @@
 //we need access to the bcrypt package and db pool
 const bcrypt = require("bcrypt"); //import bcyrpt which we use to hash the passwords
 const pool = require("../config/db"); //import our connection pool so we can query the db
+const jwt = require("jsonwebtoken");
 
 const signup = async (req, res) => {
     try {
@@ -52,6 +53,70 @@ const signup = async (req, res) => {
     }
 };
 
+const login = async (req, res) => {
+    try {
+        //get the login data from the request body
+        const { email, password } = req.body;
+
+        //check for missing required fields 
+        if(!email || !password){
+            return res.status(400).json({
+                message: "Email and password are required",
+            });
+        }
+
+        //get our result object
+        const result = await pool.query(
+            `SELECT id, name, email, password_hash, created_at
+            FROM users
+            WHERE email = $1`,
+            [email]
+        );
+
+        //if result has no rows then there is no user with this information which we must check for
+        if(result.rows.length === 0){
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+
+        const user = result.rows[0];
+
+        //We must hash the entered password and compare it to the one associated with the entered email
+        const passwordMatches = await bcrypt.compare(password, user.password_hash);
+
+        if(!passwordMatches){
+            res.status(401).json({
+                message: "Invlide email or password",
+            });
+        }
+        
+        //create the login token using jwt
+        const token = jwt.sign(
+            { userId: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" },
+        );
+
+        res.json({
+            message: "Login success",
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                created_at: user.created_at,
+            },
+        });
+    } catch (error) {
+        console.log("Login error: ", error);
+        res.status(500).json({
+            message: "Server error during login",
+        });
+    }
+};
+
 module.exports = {
     signup,
+    login,
 };
