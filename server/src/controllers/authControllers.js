@@ -90,7 +90,7 @@ const login = async (req, res) => {
                 message: "Invlide email or password",
             });
         }
-        
+
         //create the login token using jwt
         const token = jwt.sign(
             { userId: user.id },
@@ -116,7 +116,34 @@ const login = async (req, res) => {
     }
 };
 
+const getMe = async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT id, name, email, created_at
+            FROM users
+            WHERE id = $1`,
+            [req.user.userId]
+        );
+
+        if(result.rows.length === 0){
+            res.status(404).json({
+                message: "User not found",
+            });
+        }
+
+        res.json({
+            user: result.rows[0],
+        });
+    } catch (error) {
+        console.log("Get me error: ", error);
+        res.status(500),json({
+            message: "Server error while fetching user"
+        });
+    }
+}
+
 module.exports = {
     signup,
     login,
+    getMe,
 };
