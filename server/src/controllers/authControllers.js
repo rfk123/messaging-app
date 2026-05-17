@@ -3,6 +3,10 @@ const bcrypt = require("bcrypt"); //import bcyrpt which we use to hash the passw
 const pool = require("../config/db"); //import our connection pool so we can query the db
 const jwt = require("jsonwebtoken");
 
+
+//Helper function to normailze the email
+const normalizeEmail = (email) => { return email.trim().toLowerCase() };
+
 const signup = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -13,11 +17,12 @@ const signup = async (req, res) => {
                 message: "Name, email, and password are required",
             });
         }
-
+        const normalizedEmail = normalizeEmail(email);
+        
         //check if there already exists a user with this user email
         const existingUser = await pool.query(
             "SELECT * FROM users WHERE email = $1",
-            [email]
+            [normalizedEmail]
         );
 
         if(existingUser.rows.length > 0){
@@ -34,20 +39,20 @@ const signup = async (req, res) => {
             `INSERT INTO users (name, email, password_hash)
             VALUES ($1, $2, $3)
             RETURNING id, name, email, created_at`,
-            [name, email, passwordHash]
+            [name, normalizedEmail, passwordHash]
         );
 
         //we will need a user object to return in the response
         const user = result.rows[0];
 
         //response body for successuly user creation
-        res.status(201).json({
+        return res.status(201).json({
             message: "User created successfully",
             user,
         });
     } catch (error) {
         console.log("Signup error: ", error);
-        res.status(500).json({
+        return res.status(500).json({
             message: "Server error during signup",
         });
     }
@@ -64,13 +69,14 @@ const login = async (req, res) => {
                 message: "Email and password are required",
             });
         }
+        const normalizedEmail = normalizeEmail(email);
 
         //get our result object
         const result = await pool.query(
             `SELECT id, name, email, password_hash, created_at
             FROM users
             WHERE email = $1`,
-            [email]
+            [normalizedEmail]
         );
 
         //if result has no rows then there is no user with this information which we must check for
@@ -86,8 +92,8 @@ const login = async (req, res) => {
         const passwordMatches = await bcrypt.compare(password, user.password_hash);
 
         if(!passwordMatches){
-            res.status(401).json({
-                message: "Invlide email or password",
+            return res.status(401).json({
+                message: "Invalide email or password",
             });
         }
 
@@ -98,7 +104,7 @@ const login = async (req, res) => {
             { expiresIn: "7d" },
         );
 
-        res.json({
+        return res.json({
             message: "Login success",
             token,
             user: {
@@ -110,7 +116,7 @@ const login = async (req, res) => {
         });
     } catch (error) {
         console.log("Login error: ", error);
-        res.status(500).json({
+        return res.status(500).json({
             message: "Server error during login",
         });
     }
@@ -126,17 +132,17 @@ const getMe = async (req, res) => {
         );
 
         if(result.rows.length === 0){
-            res.status(404).json({
+            return res.status(404).json({
                 message: "User not found",
             });
         }
 
-        res.json({
+        return res.json({
             user: result.rows[0],
         });
     } catch (error) {
         console.log("Get me error: ", error);
-        res.status(500),json({
+        return res.status(500).json({
             message: "Server error while fetching user"
         });
     }
