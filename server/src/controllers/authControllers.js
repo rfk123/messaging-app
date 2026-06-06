@@ -137,7 +137,7 @@ const getMe = async (req, res) => {
             });
         }
 
-        return res.json({
+        return res.status(200).json({
             user: result.rows[0],
         });
     } catch (error) {
