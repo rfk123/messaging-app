@@ -13,6 +13,17 @@ afterAll( async () => {
     await pool.end();
 })
 
+const signupUser = async (overrides = {}) => {
+    const user = {
+        name: "test",
+        email: "test@test.com",
+        password: "password",
+        ...overrides,
+    };
+
+    return request(app).post("/api/auth/signup").send(user);
+};
+
 //testing the signup POST route and are expecting a status code of 201 for success
 describe("Auth Routes", () => {
     describe("POST /api/auth/signup", () => {
@@ -51,11 +62,7 @@ describe("Auth Routes", () => {
     })
     describe("POST /api/auth/login", () => {
         test("Valid user login responds with success", async () => {
-            await request(app).post("/api/auth/signup").send({
-                name: "test",
-                email: "test@test.com",
-                password: "password"
-            });
+            await signupUser();
             const response = await request(app).post("/api/auth/login").send({
                 email: "test@test.com",
                 password: "password",
@@ -65,11 +72,7 @@ describe("Auth Routes", () => {
         })
 
         test("Login with wrong password responds with error", async () => {
-            await request(app).post("/api/auth/signup").send({
-                name: "test",
-                email: "test@test.com",
-                password: "password"
-            });
+            await signupUser();
             
             const response = await request(app).post("/api/auth/login").send({
                 email: "test@test.com",
@@ -79,6 +82,21 @@ describe("Auth Routes", () => {
             expect(response.statusCode).toBe(401);
             expect(response.body.message).toBeDefined();
         })
+
+        test("Login with missing field responds with error", async () => {
+            const response = await request(app).post("/api/auth/login").send({
+                password: "anypassword",
+            });
+            expect(response.statusCode).toBe(400);
+            expect(response.body.message).toBeDefined();
+        })
     })
+    // describe("GET /api/auth/getme", () => {
+    //     test("Retrieving a user that doesnt exist responds with error", async () => {
+    //         const response = request(app).get("/api/auth/getme").send({
+
+    //         })
+    //     })
+    // })
 });
 
